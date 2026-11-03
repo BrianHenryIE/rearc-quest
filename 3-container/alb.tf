@@ -21,6 +21,19 @@ resource "aws_lb_listener" "rearc_quest_ecs_alb_listener" {
   }
 }
 
+resource "aws_lb_listener" "rearc_quest_ecs_alb_listener_https" {
+  load_balancer_arn = aws_lb.rearc_quest_ecs_alb.arn
+  port              = "443"
+  protocol          = "HTTPS"
+  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  certificate_arn   = aws_iam_server_certificate.rearc_quest_cert.arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.rearc_quest_ecs_tg.arn
+  }
+}
+
 resource "aws_lb_target_group" "rearc_quest_ecs_tg" {
   name        = "rearc-quest-ecs-target-group"
   port        = 80
