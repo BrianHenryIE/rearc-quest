@@ -1,0 +1,3 @@
+[submodule "rearc-quest"]
+	path = rearc-quest
+	url = https://github.com/rearc/quest
