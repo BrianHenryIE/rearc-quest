@@ -15,5 +15,7 @@ output "provider_region" {
   description = "The region configured in the AWS provider."
 }
 
-
-# TODO: rearc-quest-ecs-alb DNS name.
+output "alb_dns_name" {
+  value       = aws_lb.rearc_quest_ecs_alb.dns_name
+  description = "The DNS name of the Application Load Balancer."
+}

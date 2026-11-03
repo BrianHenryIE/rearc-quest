@@ -17,3 +17,8 @@ variable "vpc_cidr" {
   type        = string
   default     = "10.0.0.0/16"
 }
+
+# This will be set by `TF_VAR_secret_word=<secret_value>` in the `terraform apply` environment.
+# Currently it is applied  via `aws_ecs_task_definition` `container_definitions`
+# NB but should be stored in AWS Secrets Manager and retrieved by the ECS task.
+variable "secret_word" { sensitive = true }
