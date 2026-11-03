@@ -42,6 +42,6 @@ resource "aws_lb_target_group" "rearc_quest_ecs_tg" {
   vpc_id      = aws_vpc.main.id
 
   health_check {
-    path = "/"
+    path = "/docker"
   }
 }
