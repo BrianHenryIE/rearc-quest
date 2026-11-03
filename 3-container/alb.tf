@@ -25,7 +25,7 @@ resource "aws_lb_listener" "rearc_quest_ecs_alb_listener_https" {
   load_balancer_arn = aws_lb.rearc_quest_ecs_alb.arn
   port              = "443"
   protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-2016-08"
+  ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
   certificate_arn   = aws_iam_server_certificate.rearc_quest_cert.arn
 
   default_action {
@@ -42,6 +42,6 @@ resource "aws_lb_target_group" "rearc_quest_ecs_tg" {
   vpc_id      = aws_vpc.main.id
 
   health_check {
-    path = "/"
+    path = "/docker"
   }
 }
