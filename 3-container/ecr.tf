@@ -1,6 +1,7 @@
 # create ecr repo
 resource "aws_ecr_repository" "my-rearc-quest-ecr-repo" {
-  name = "rearc-quest"
+  name         = "rearc-quest"
+  force_delete = true
 }
 
 # get authorization credentials to push to ecr
