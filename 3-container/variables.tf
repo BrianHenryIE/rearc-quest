@@ -10,3 +10,10 @@ locals {
   # modify or delete resources tagged Environment=ci (see 0-github-actions-oidc/main.tf).
   environment = terraform.workspace == "default" ? "production" : "ci"
 }
+
+
+variable "vpc_cidr" {
+  description = "CIDR block for main"
+  type        = string
+  default     = "10.0.0.0/16"
+}

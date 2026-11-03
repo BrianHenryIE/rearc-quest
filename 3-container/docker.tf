@@ -9,5 +9,8 @@ resource "docker_image" "rearc_quest_docker_image" {
   build {
     context    = "${path.module}/.."
     dockerfile = "${path.module}/3-container/Dockerfile"
+    # The quest's bin/* are x86-64 Linux binaries, and the ECS task runs X86_64.
+    # Without this, building on Apple Silicon produces a linux/arm64 image.
+    platform = "linux/amd64"
   }
 }
