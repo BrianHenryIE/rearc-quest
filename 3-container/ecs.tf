@@ -24,7 +24,7 @@ resource "aws_launch_template" "rearc_quest_ecs_lt" {
 }
 
 resource "aws_autoscaling_group" "rearc_quest_ecs_asg" {
-  vpc_zone_identifier = [aws_subnet.subnet.id, aws_subnet.subnet2.id]
+  vpc_zone_identifier = [aws_subnet.private_subnet.id, aws_subnet.private_subnet2.id]
   desired_capacity    = 2
   max_size            = 3
   min_size            = 1
@@ -122,7 +122,7 @@ resource "aws_ecs_service" "rearc_quest_ecs_service" {
   desired_count   = 2
 
   network_configuration {
-    subnets         = [aws_subnet.subnet.id, aws_subnet.subnet2.id]
+    subnets         = [aws_subnet.private_subnet.id, aws_subnet.private_subnet2.id]
     security_groups = [aws_security_group.security_group.id]
   }
 
