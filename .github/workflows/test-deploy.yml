@@ -71,7 +71,8 @@ jobs:
           # /aws (bin/002) reports which cloud it detects. Not / : on a cloud host it returns the quest's secret word.
           url="http://${ip}:3000/aws"
           echo "Waiting for $url"
-          for _ in $(seq 1 40); do
+          deadline=$((SECONDS + 600))
+          while [ "$SECONDS" -lt "$deadline" ]; do
             # The quest binaries probe cloud metadata endpoints before answering, taking ~5s.
             if body="$(curl -sf --connect-timeout 5 --max-time 30 "$url")"; then
               echo "Response: $body"
@@ -82,7 +83,7 @@ jobs:
             fi
             sleep 10
           done
-          echo "::error::$url did not respond within 10 minutes"
+          echo "::error::$url did not respond within ${SECONDS}s"
           exit 1
 
       - name: Destroy
