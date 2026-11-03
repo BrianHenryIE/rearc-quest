@@ -68,13 +68,15 @@ jobs:
       - name: Verify deploy
         run: |
           ip="$(terraform output -raw public_ip)"
-          url="http://${ip}:3000/"
+          # /aws (bin/002) reports which cloud it detects. Not / : on a cloud host it returns the quest's secret word.
+          url="http://${ip}:3000/aws"
           echo "Waiting for $url"
-          for _ in $(seq 1 60); do
-            if body="$(curl -sf --max-time 5 "$url")"; then
+          for _ in $(seq 1 40); do
+            # The quest binaries probe cloud metadata endpoints before answering, taking ~5s.
+            if body="$(curl -sf --connect-timeout 5 --max-time 30 "$url")"; then
               echo "Response: $body"
               case "$body" in
-                "Congratulations! You are running in"*) exit 0 ;;
+                "Congratulations! You are running in AWS"*) exit 0 ;;
                 *) echo "::error::Unexpected response from $url: $body"; exit 1 ;;
               esac
             fi
