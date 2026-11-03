@@ -14,3 +14,8 @@ output "provider_region" {
   value       = data.aws_region.current.region
   description = "The region configured in the AWS provider."
 }
+
+output "alb_dns_name" {
+  value       = aws_lb.rearc_quest_ecs_alb.dns_name
+  description = "The DNS name of the Application Load Balancer."
+}
