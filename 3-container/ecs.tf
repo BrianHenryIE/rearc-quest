@@ -105,6 +105,12 @@ resource "aws_ecs_task_definition" "ecs_task_definition" {
           protocol      = "tcp"
         }
       ]
+      environment = [
+        {
+          name  = "SECRET_WORD"
+          value = var.secret_word
+        }
+      ]
     }
   ])
 }
@@ -123,10 +129,6 @@ resource "aws_ecs_service" "rearc_quest_ecs_service" {
   force_new_deployment = true
   placement_constraints {
     type = "distinctInstance"
-  }
-
-  triggers = {
-    redeployment = timestamp()
   }
 
   capacity_provider_strategy {
