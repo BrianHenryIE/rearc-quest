@@ -1,0 +1,46 @@
+name: Test Submodule
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Start app in container
+        working-directory: rearc-quest
+        run: |
+          docker run -d --name rearc-quest --platform linux/amd64 \
+            -p 3000:3000 -v "$PWD":/app -w /app node:20 \
+            sh -c "npm install && npm start"
+
+      - name: Wait for app to respond
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000/docker > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "App did not start within 120s"
+          exit 1
+
+      - name: Check response
+        run: |
+          expected="Congratulations! You are running in a Docker container"
+          actual="$(curl -s http://localhost:3000/docker)"
+          echo "Response: $actual"
+          if [ "$actual" != "$expected" ]; then
+            echo "::error::Expected '$expected' but got '$actual'"
+            exit 1
+          fi
+
+      - name: Container logs
+        if: always()
+        run: docker logs rearc-quest || true
