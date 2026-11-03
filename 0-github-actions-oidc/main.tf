@@ -3,7 +3,10 @@
 # https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
 
 locals {
-  repository = "BrianHenryIE/rearc-quest"
+  # The repo uses GitHub's immutable OIDC subject format, which includes the owner and
+  # repo IDs so a renamed or re-created repo with the same name can't match.
+  #   gh api repos/BrianHenryIE/rearc-quest/actions/oidc/customization/sub
+  subject_prefix = "repo:BrianHenryIE@4720401/rearc-quest@1443627512"
 }
 
 # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_openid_connect_provider
@@ -32,8 +35,8 @@ data "aws_iam_policy_document" "trust" {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
-        "repo:${local.repository}:pull_request",
-        "repo:${local.repository}:ref:refs/heads/*",
+        "${local.subject_prefix}:pull_request",
+        "${local.subject_prefix}:ref:refs/heads/*",
       ]
     }
   }
