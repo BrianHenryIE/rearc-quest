@@ -17,7 +17,7 @@ resource "aws_instance" "rearc-quest" {
   user_data_replace_on_change = true
 
   tags = {
-    Name = "Rearc_Quest"
+    Name = var.name
   }
 
   lifecycle {

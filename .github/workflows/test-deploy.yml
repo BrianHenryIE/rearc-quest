@@ -1,0 +1,98 @@
+name: Test Deploy
+
+# Deploys 2-terraform-ec2 to a throwaway EC2 instance named after the commit, checks the
+# app responds from AWS, then destroys it. Production (the default workspace, i.e. the
+# committed 2-terraform-ec2/terraform.tfstate) is never read or written.
+
+on:
+  pull_request:
+    paths:
+      - "2-terraform-ec2/**"
+      - ".github/workflows/test-deploy.yml"
+  workflow_dispatch:
+
+permissions:
+  id-token: write # OIDC token for aws-actions/configure-aws-credentials
+  contents: read
+
+env:
+  SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  deploy-test-destroy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: test-deploy-${{ github.ref }}
+      cancel-in-progress: false # cancelling mid-apply could orphan the instance
+    defaults:
+      run:
+        working-directory: 2-terraform-ec2
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set deploy identifiers
+        run: |
+          short="${SHA::7}"
+          echo "TF_WORKSPACE_NAME=ci-${short}" >> "$GITHUB_ENV"
+          echo "TF_VAR_name=rearc-quest-${short}" >> "$GITHUB_ENV"
+
+      # Role created by 0-github-actions-oidc. It can only modify/delete resources tagged Environment=ci.
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::520658182982:role/rearc-quest-github-ci-deploy
+          aws-region: us-west-1
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.17.1
+          terraform_wrapper: false
+
+      - run: terraform init -input=false
+
+      - name: Select CI workspace
+        id: workspace
+        run: |
+          terraform workspace select -or-create "$TF_WORKSPACE_NAME"
+          current="$(terraform workspace show)"
+          echo "Workspace: $current"
+          if [ "$current" = "default" ]; then
+            echo "::error::Refusing to run in the default (production) workspace"
+            exit 1
+          fi
+
+      - name: Apply
+        run: terraform apply -input=false -auto-approve
+
+      - name: Verify deploy
+        run: |
+          ip="$(terraform output -raw public_ip)"
+          url="http://${ip}:3000/"
+          echo "Waiting for $url"
+          for _ in $(seq 1 60); do
+            if body="$(curl -sf --max-time 5 "$url")"; then
+              echo "Response: $body"
+              case "$body" in
+                "Congratulations! You are running in"*) exit 0 ;;
+                *) echo "::error::Unexpected response from $url: $body"; exit 1 ;;
+              esac
+            fi
+            sleep 10
+          done
+          echo "::error::$url did not respond within 10 minutes"
+          exit 1
+
+      - name: Destroy
+        if: always() && steps.workspace.outcome == 'success'
+        run: terraform destroy -input=false -auto-approve
+
+      # If destroy failed, keep the state so the instance can be destroyed by hand:
+      #   download it to 2-terraform-ec2/terraform.tfstate.d/<workspace>/ and run
+      #   terraform workspace select <workspace> && terraform destroy
+      - name: Upload CI state on failure
+        if: failure() && steps.workspace.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-state-${{ env.TF_WORKSPACE_NAME }}
+          path: 2-terraform-ec2/terraform.tfstate.d/
